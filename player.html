@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>英文面试 - 纯色滚动录屏工具 Pro Plus</title>
+    <!-- 引入 FontAwesome 图标，提供美观的界面按钮 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0F172A;
+            --text-color: #FFFFFF;
+            --font-size: 36px;
+            --line-height: 1.6;
+            --para-margin: 40px; /* 可调节的段落间距 */
+            --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-weight: 700;
+            
+            /* 描边 */
+            --stroke-width: 0px;
+            --stroke-color: #000000;
+            
+            /* 阴影/发光 */
+            --shadow-x: 0px;
+            --shadow-y: 4px;
+            --shadow-blur: 8px;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+            
+            /* 对齐 */
+            --text-align: center;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-color); /* 绑定自选背景色，完美消除边缘色差 */
+            color: #ffffff;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 兼容最新 iOS 动态视口高度，确保全屏模式在 iPhone 上完全占满 */
+        @supports (height: 100dvh) {
+            body, html, #stage-wrapper {
+                height: 100dvh;
+            }
+        }
+
+        #control-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            color: #f1f5f9;
+            font-size: 13px;
+            overflow-y: auto;
+            max-width: 440px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease-in-out;
+        }
+
+        @media (min-width: 600px) {
+            #control-panel {
+                top: 20px;
+                left: 20px;
+                bottom: auto;
+                right: auto;
+                max-height: 90vh;
+            }
+        }
+
+        .panel-header {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #38bdf8;
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            margin: 15px 0 8px 0;
+            border-left: 3px solid #38bdf8;
+            padding-left: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #fff;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+
+        input[type="color"] {
+            padding: 2px 5px;
+            height: 32px;
+            cursor: pointer;
+        }
+
+        /* 紧凑的多列网格 */
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .style-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .style-item span {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 3px;
+        }
+
+        #preview-cabin {
+            width: 100%;
+            height: 90px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            overflow: hidden;
+            position: relative;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #preview-text {
+            font-size: calc(var(--font-size) * 0.45);
+            line-height: var(--line-height);
+            font-family: var(--font-family);
+            font-weight: var(--font-weight);
+            color: var(--text-color);
+            text-align: var(--text-align);
+            -webkit-text-stroke: calc(var(--stroke-width) * 0.45) var(--stroke-color);
+            text-shadow: var(--shadow-x) var(--shadow-y) calc(var(--shadow-blur) * 0.45) var(--shadow-color);
+            width: 90%;
+            white-space: pre-wrap;
+        }
+
+        /* 预设管理器 */
+        .preset-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .preset-badge {
+            background: #334155;
+            color: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 11px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .preset-badge:hover, .preset-badge.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: white;
+        }
+
+        .preset-actions {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        /* 按钮样式体系 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: #0284c7;
+            color: white;
+            flex: 1.5;
+        }
+        .btn-primary:hover { background: #0369a1; }
+
+        .btn-secondary {
+            background: #475569;
+            color: white;
+            flex: 1;
+        }
+        .btn-secondary:hover { background: #334155; }
+
+        #stage-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color); /* 绑定自选背景色 */
+        }
+
+        #stage {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+            transition: width 0.3s, height 0.3s;
+            cursor: grab;
+        }
+
+        #stage:active {
+            cursor: grabbing;
+        }
+
+        #stage.ratio-9-16 {
+            width: calc(100vh * 9 / 16);
+            height: 100vh;
+            max-width: 100%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        @supports (height: 100dvh) {
+            #stage.ratio-9-16 {
+                width: calc(100dvh * 9 / 16);
+                height: 100dvh;
+            }
+        }
+
+        /* 核心文本垂直居中滚动容器 */
+        #text-container {
+            width: 85%;
+            position: absolute;
+            top: 50%; /* 核心：初始第一行文本顶部对齐舞台50%中心线 */
+            left: 50%;
+            transform: translate(-50%, 0); 
+            text-align: var(--text-align);
+            will-change: transform;
+            pointer-events: none; /* 让拖拽事件穿透由舞台统一捕获，防止选中文本 */
+        }
+
+        /* 文本段落控制 */
+        .text-paragraph {
+            color: var(--text-color); /* 完美实现字色绑定 */
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            font-family: var(--font-family);
+            font-weight: var(--font-weight);
+            margin-bottom: var(--para-margin); 
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
+            
+            -webkit-text-stroke: var(--stroke-width) var(--stroke-color);
+            text-shadow: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-color);
+            transition: color 0.2s;
+        }
+
+        .text-paragraph:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        #floating-toggle-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 99;
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #floating-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 触屏/点击屏幕播放暂停的华丽反馈图标 */
+        #action-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 98;
+        }
+
+        #action-overlay.flash {
+            animation: flashPlayPause 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes flashPlayPause {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.6);
+            }
+            40% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        /* 自定义通知弹窗 */
+        #custom-toast {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #0284c7;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 200;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #custom-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 舞台外层 -->
+    <div id="stage-wrapper">
+        <!-- 核心视频录制舞台 -->
+        <div id="stage" class="ratio-9-16">
+            <!-- 极简轻量级悬浮控制器 -->
+            <div id="floating-toggle-btn" title="隐藏/显示控制面板">
+                <i class="fa-solid fa-gear"></i>
+            </div>
+            
+            <!-- 播放与暂停的状态闪烁指示器 -->
+            <div id="action-overlay">
+                <i class="fa-solid fa-play"></i>
+            </div>
+
+            <!-- 滚动文案轨道 -->
+            <div id="text-container"></div>
+        </div>
+    </div>
+
+    <div id="control-panel">
+        <div class="panel-header">
+            <span><i class="fa-solid fa-wand-magic-sparkles"></i> 英文面试录屏大师 Pro Plus</span>
+            <span style="font-size: 10px; color: #64748b; font-weight: normal;">录制时面板会自动隐藏</span>
+        </div>
+
+        <!-- 1. 媒体加载与播放设置 -->
+        <div class="section-title">1. 媒体与语速控制</div>
+        <div class="form-group">
+            <label>导入媒体 (支持 MOV/MP4/MP3)</label>
+            <input type="file" id="media-input" accept="audio/*,video/*">
+        </div>
+        <div class="style-grid" style="margin-bottom: 5px;">
+            <div class="style-item" style="grid-column: span 2;">
+                <span>播放语速 (Speed)</span>
+                <select id="playback-speed">
+                    <option value="0.5">0.5x 慢速跟读</option>
+                    <option value="0.75">0.75x 练习语速</option>
+                    <option value="1.0" selected>1.0x 标准面试语速</option>
+                    <option value="1.25">1.25x 快速挑战</option>
+                    <option value="1.5">1.5x 熟练度测试</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 2. 文案输入 -->
+        <div class="section-title">2. 粘贴英文面试文案</div>
+        <div class="form-group">
+            <textarea id="text-input" placeholder="在这里粘贴文案，回车换行会被100%忠实保留..."></textarea>
+        </div>
+
+        <!-- 3. 常用样式管理器 -->
+        <div class="section-title">3. 常用样式模板</div>
+        <div class="preset-container" id="preset-list">
+            <!-- 动态生成预设卡片 -->
+        </div>
+        <div class="preset-actions">
+            <input type="text" id="new-preset-name" placeholder="输入新预设名称..." style="flex: 1; padding: 6px 10px; font-size: 12px;">
+            <button id="save-preset-btn" class="btn-primary" style="padding: 6px 12px; font-size: 12px;"><i class="fa-solid fa-plus"></i> 存为常用</button>
+        </div>
+
+        <!-- 4. 视觉排版控制 -->
+        <div class="section-title">4. 字体与排版样式</div>
+        <div class="form-group">
+            <label>样式实时预览（仿2:1比例）</label>
+            <div id="preview-cabin">
+                <div id="preview-text">Q: How to handle conflicts?<br>A: Listen and cooperate.</div>
+            </div>
+        </div>
+
+        <div class="style-grid">
+            <div class="style-item">
+                <span>画布背景色</span>
+                <input type="color" id="bg-color" value="#0F172A">
+            </div>
+            <div class="style-item">
+                <span>文字颜色</span>
+                <input type="color" id="text-color" value="#FFFFFF">
+            </div>
+            <div class="style-item">
+                <span>英文字体</span>
+                <select id="font-family">
+                    <option value="system-ui">系统默认</option>
+                    <option value="'Arial Black', Gadget, sans-serif">粗体时尚 (Arial Black)</option>
+                    <option value="'Georgia', serif">优雅复古 (Georgia)</option>
+                    <option value="'Impact', Charcoal, sans-serif">震撼厚重 (Impact)</option>
+                    <option value="'Trebuchet MS', sans-serif">现代运动 (Trebuchet)</option>
+                </select>
+            </div>
+            <div class="style-item">
+                <span>对齐方式</span>
+                <select id="text-align">
+                    <option value="center" selected>居中对齐</option>
+                    <option value="left">靠左对齐</option>
+                    <option value="right">靠右对齐</option>
+                </select>
+            </div>
+            <div class="style-item">
+                <span>字号大小 (px)</span>
+                <input type="number" id="font-size" value="32" min="16" max="100">
+            </div>
+            <div class="style-item">
+                <span>文本粗细</span>
+                <select id="font-weight">
+                    <option value="normal">标准 (Normal)</option>
+                    <option value="bold" selected>加粗 (Bold)</option>
+                    <option value="900">极粗 (Black)</option>
+                </select>
+            </div>
+            <div class="style-item">
+                <span>段落间距 (Gap)</span>
+                <input type="range" id="para-margin-slider" min="0" max="120" value="40" step="5">
+            </div>
+            <div class="style-item">
+                <span>行间距 (Line Height)</span>
+                <input type="range" id="line-height-slider" min="1.0" max="2.5" value="1.6" step="0.1">
+            </div>
+        </div>
+
+        <!-- 5. 描边与外发光高级特效 -->
+        <div class="section-title">5. 描边与外发光特效</div>
+        <div class="style-grid">
+            <div class="style-item" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; gap: 8px; margin-bottom: 5px;">
+                <input type="checkbox" id="shadow-toggle" style="width: auto; height: auto; cursor: pointer;">
+                <label for="shadow-toggle" style="display: inline; margin: 0; font-size: 12px; color: #cbd5e1; cursor: pointer; user-select: none;">启用文字阴影/外发光效果</label>
+            </div>
+            <div class="style-item">
+                <span>描边粗细 (px)</span>
+                <input type="number" id="stroke-width" value="0" min="0" max="10" step="0.5">
+            </div>
+            <div class="style-item">
+                <span>描边颜色</span>
+                <input type="color" id="stroke-color" value="#000000">
+            </div>
+            <div class="style-item">
+                <span>外发光大小 (Blur)</span>
+                <input type="number" id="shadow-blur" value="8" min="0" max="30">
+            </div>
+            <div class="style-item">
+                <span>外发光颜色</span>
+                <input type="color" id="shadow-color" value="#000000">
+            </div>
+        </div>
+
+        <!-- 6. 画面比例 -->
+        <div class="section-title">6. 录屏画布尺寸</div>
+        <div class="form-group">
+            <select id="aspect-ratio">
+                <option value="ratio-9-16" selected>手机竖屏 (9:16)</option>
+                <option value="full">全屏模式 (适应浏览器窗口)</option>
+            </select>
+        </div>
+
+        <div class="btn-group">
+            <button id="start-btn" class="btn-primary"><i class="fa-solid fa-play"></i> 开始播放滚动</button>
+            <button id="toggle-panel-btn" class="btn-secondary">隐藏面板</button>
+        </div>
+        <div style="margin-top: 15px; font-size: 11px; color: #64748b; line-height: 1.4; text-align: center;">
+            💻 电脑端：【H】键隐藏面板，或任意空白处【单击】暂停/播放<br>
+            📱 手机端：【双击】或点击右上角【⚙️】隐藏面板；直接在屏幕上【上下拖拽文字】调节进度，【单击】可暂停/开始
+        </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="custom-toast">提示消息</div>
+
+    <!-- 完美解决 iOS MOV 强制全屏或画中画弹窗图标的黑科技。
+         不使用 display: none 而是使用物理微米尺寸和屏幕外抛射，辅以 iOS 专属 inline 播放指令，确保视频流在后台作为纯音轨默默执行，不触发任何 iOS 弹窗控件 -->
+    <video id="hidden-media-player" playsinline webkit-playsinline disablePictureInPicture style="position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -9999; left: -100px; top: -100px;"></video>
+
+    <script>
+        const mediaInput = document.getElementById('media-input');
+        const playbackSpeed = document.getElementById('playback-speed');
+        const textInput = document.getElementById('text-input');
+        const startBtn = document.getElementById('start-btn');
+        const togglePanelBtn = document.getElementById('toggle-panel-btn');
+        const floatingToggleBtn = document.getElementById('floating-toggle-btn');
+        const controlPanel = document.getElementById('control-panel');
+        const toast = document.getElementById('custom-toast');
+        const presetList = document.getElementById('preset-list');
+        const newPresetName = document.getElementById('new-preset-name');
+        const savePresetBtn = document.getElementById('save-preset-btn');
+        const actionOverlay = document.getElementById('action-overlay');
+        
+        const hiddenPlayer = document.getElementById('hidden-media-player');
+        const textContainer = document.getElementById('text-container');
+        const stage = document.getElementById('stage');
+        const previewText = document.getElementById('preview-text');
+
+        let animationFrameId = null;
+        let isDragging = false;
+        let startY = 0;
+        let startTranslateY = 0;
+        let wasPlayingBeforeDrag = false;
+        let hasMoved = false;
+        let lastTap = 0;
+
+        const DEFAULT_PRESETS = [
+            {
+                name: "小红书爆款黄白",
+                bg: "#0B0F19", text: "#FFFFFF", font: "system-ui", align: "center",
+                size: 34, weight: "bold", para: 35, line: 1.6, strokeW: 1.5, strokeC: "#000000", shadowOn: true, shadowB: 12, shadowC: "#000000"
+            },
+            {
+                name: "绿幕便捷抠像",
+                bg: "#00FF00", text: "#FFFFFF", font: "system-ui", align: "center",
+                size: 36, weight: "bold", para: 40, line: 1.5, strokeW: 2.5, strokeC: "#000000", shadowOn: true, shadowB: 15, shadowC: "#000000"
+            },
+            {
+                name: "极简高端暗黑",
+                bg: "#000000", text: "#F1F5F9", font: "'Georgia', serif", align: "left",
+                size: 30, weight: "normal", para: 45, line: 1.8, strokeW: 0, strokeC: "#000000", shadowOn: false, shadowB: 6, shadowC: "#1e293b"
+            },
+            {
+                name: "复古学术羊皮",
+                bg: "#FDF6E3", text: "#2E3440", font: "'Georgia', serif", align: "center",
+                size: 32, weight: "bold", para: 30, line: 1.7, strokeW: 0, strokeC: "#000000", shadowOn: false, shadowB: 0, shadowC: "#000000"
+            }
+        ];
+
+        // 存储的用户自定义预设
+        let userPresets = [];
+
+        // 提示框工具
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function syncStyles() {
+            const bgVal = document.getElementById('bg-color').value;
+            const textVal = document.getElementById('text-color').value;
+            const fontVal = document.getElementById('font-family').value;
+            const alignVal = document.getElementById('text-align').value;
+            const sizeVal = document.getElementById('font-size').value;
+            const weightVal = document.getElementById('font-weight').value;
+            const paraVal = document.getElementById('para-margin-slider').value;
+            const lineVal = document.getElementById('line-height-slider').value;
+            const strokeWVal = document.getElementById('stroke-width').value;
+            const strokeCVal = document.getElementById('stroke-color').value;
+
+            const shadowOn = document.getElementById('shadow-toggle').checked;
+            const shadowBVal = shadowOn ? document.getElementById('shadow-blur').value : 0;
+            const shadowCVal = shadowOn ? document.getElementById('shadow-color').value : 'transparent';
+            const shadowXVal = shadowOn ? '0px' : '0px';
+            const shadowYVal = shadowOn ? '4px' : '0px';
+
+            // 写入 CSS 变量
+            document.documentElement.style.setProperty('--bg-color', bgVal);
+            document.documentElement.style.setProperty('--text-color', textVal);
+            document.documentElement.style.setProperty('--font-family', fontVal);
+            document.documentElement.style.setProperty('--text-align', alignVal);
+            document.documentElement.style.setProperty('--font-size', sizeVal + 'px');
+            document.documentElement.style.setProperty('--font-weight', weightVal);
+            document.documentElement.style.setProperty('--para-margin', paraVal + 'px');
+            document.documentElement.style.setProperty('--line-height', lineVal);
+            document.documentElement.style.setProperty('--stroke-width', strokeWVal + 'px');
+            document.documentElement.style.setProperty('--stroke-color', strokeCVal);
+            document.documentElement.style.setProperty('--shadow-blur', shadowBVal + 'px');
+            document.documentElement.style.setProperty('--shadow-color', shadowCVal);
+            document.documentElement.style.setProperty('--shadow-x', shadowXVal);
+            document.documentElement.style.setProperty('--shadow-y', shadowYVal);
+
+            // 自动同步修改预览舱文字
+            previewText.innerText = `Q: What is your style?\nA: It looks perfect like this.`;
+
+            // 保存用户最后的偏好到本地，防止刷新丢失
+            saveLastConfigToLocalStorage();
+        }
+
+        const styleControllers = [
+            'bg-color', 'text-color', 'font-family', 'text-align', 'font-size', 'font-weight',
+            'para-margin-slider', 'line-height-slider', 'stroke-width', 'stroke-color', 'shadow-blur', 'shadow-color', 'shadow-toggle'
+        ];
+        styleControllers.forEach(id => {
+            document.getElementById(id).addEventListener('input', syncStyles);
+            document.getElementById(id).addEventListener('change', syncStyles);
+        });
+
+        // 专门修复 iOS 16+ 键盘收起后网页视口整体位移上移回不来的 Bug
+        document.querySelectorAll('input, select, textarea').forEach(element => {
+            element.addEventListener('blur', () => {
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                    document.body.scrollTop = 0;
+                }, 80);
+            });
+        });
+
+        // 媒体文件加载与语速控制
+        mediaInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                hiddenPlayer.src = URL.createObjectURL(file);
+                hiddenPlayer.load();
+                showToast("✅ 媒体音视频提取成功！");
+            }
+        });
+
+        playbackSpeed.addEventListener('change', () => {
+            hiddenPlayer.playbackRate = parseFloat(playbackSpeed.value);
+            showToast(`🚀 语速已调整为: ${playbackSpeed.value}x`);
+        });
+
+        // 画面比例自适应
+        document.getElementById('aspect-ratio').addEventListener('change', (e) => {
+            if (e.target.value === 'ratio-9-16') {
+                stage.classList.add('ratio-9-16');
+            } else {
+                stage.classList.remove('ratio-9-16');
+            }
+        });
+
+        // 显示/隐藏面板主逻辑
+        function togglePanel() {
+            if (controlPanel.style.display === 'none') {
+                controlPanel.style.display = 'block';
+                floatingToggleBtn.style.color = 'rgba(255, 255, 255, 0.25)';
+            } else {
+                controlPanel.style.display = 'none';
+                floatingToggleBtn.style.color = 'rgba(255, 255, 255, 0.05)'; // 录屏时极致隐藏
+            }
+        }
+        togglePanelBtn.addEventListener('click', togglePanel);
+        floatingToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel();
+        });
+
+        // 电脑端H键控制
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                if (document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+                    togglePanel();
+                }
+            }
+        });
+
+        function renderPresetBadges() {
+            presetList.innerHTML = '';
+            // 加载内置
+            DEFAULT_PRESETS.forEach(p => {
+                const badge = document.createElement('span');
+                badge.className = 'preset-badge';
+                badge.innerText = p.name;
+                badge.onclick = () => applyPreset(p);
+                presetList.appendChild(badge);
+            });
+            // 加载自定义
+            userPresets.forEach((p, index) => {
+                const badge = document.createElement('span');
+                badge.className = 'preset-badge';
+                badge.innerHTML = `${p.name} <i class="fa-solid fa-circle-xmark" style="margin-left:5px; color:#f87171" onclick="deletePreset(${index}); event.stopPropagation();"></i>`;
+                badge.onclick = () => applyPreset(p);
+                presetList.appendChild(badge);
+            });
+        }
+
+        function applyPreset(p) {
+            document.getElementById('bg-color').value = p.bg;
+            document.getElementById('text-color').value = p.text;
+            document.getElementById('font-family').value = p.font;
+            document.getElementById('text-align').value = p.align;
+            document.getElementById('font-size').value = p.size;
+            document.getElementById('font-weight').value = p.weight;
+            document.getElementById('para-margin-slider').value = p.para;
+            document.getElementById('line-height-slider').value = p.line;
+            document.getElementById('stroke-width').value = p.strokeW;
+            document.getElementById('stroke-color').value = p.strokeC;
+            document.getElementById('shadow-toggle').checked = p.shadowOn !== undefined ? p.shadowOn : true;
+            document.getElementById('shadow-blur').value = p.shadowB;
+            document.getElementById('shadow-color').value = p.shadowC;
+            
+            syncStyles();
+            showToast(`🎨 已应用模板: ${p.name}`);
+        }
+
+        savePresetBtn.addEventListener('click', () => {
+            const name = newPresetName.value.trim();
+            if (!name) {
+                showToast("❌ 请先输入预设名称！");
+                return;
+            }
+            const newPreset = {
+                name: name,
+                bg: document.getElementById('bg-color').value,
+                text: document.getElementById('text-color').value,
+                font: document.getElementById('font-family').value,
+                align: document.getElementById('text-align').value,
+                size: parseInt(document.getElementById('font-size').value),
+                weight: document.getElementById('font-weight').value,
+                para: parseInt(document.getElementById('para-margin-slider').value),
+                line: parseFloat(document.getElementById('line-height-slider').value),
+                strokeW: parseFloat(document.getElementById('stroke-width').value),
+                strokeC: document.getElementById('stroke-color').value,
+                shadowOn: document.getElementById('shadow-toggle').checked,
+                shadowB: parseInt(document.getElementById('shadow-blur').value),
+                shadowC: document.getElementById('shadow-color').value
+            };
+            userPresets.push(newPreset);
+            localStorage.setItem('user_interview_presets', JSON.stringify(userPresets));
+            newPresetName.value = '';
+            renderPresetBadges();
+            showToast(`💾 成功保存常用样式: ${name}`);
+        });
+
+        window.deletePreset = function(index) {
+            userPresets.splice(index, 1);
+            localStorage.setItem('user_interview_presets', JSON.stringify(userPresets));
+            renderPresetBadges();
+            showToast("🗑️ 成功删除样式");
+        }
+
+        function saveLastConfigToLocalStorage() {
+            const currentConfig = {
+                text: textInput.value,
+                bg: document.getElementById('bg-color').value,
+                textC: document.getElementById('text-color').value,
+                font: document.getElementById('font-family').value,
+                align: document.getElementById('text-align').value,
+                size: document.getElementById('font-size').value,
+                weight: document.getElementById('font-weight').value,
+                para: document.getElementById('para-margin-slider').value,
+                line: document.getElementById('line-height-slider').value,
+                strokeW: document.getElementById('stroke-width').value,
+                strokeC: document.getElementById('stroke-color').value,
+                shadowOn: document.getElementById('shadow-toggle').checked,
+                shadowB: document.getElementById('shadow-blur').value,
+                shadowC: document.getElementById('shadow-color').value,
+                speed: playbackSpeed.value
+            };
+            localStorage.setItem('interview_last_config', JSON.stringify(currentConfig));
+        }
+
+        function loadSavedPresetsAndConfig() {
+            const savedPresets = localStorage.getItem('user_interview_presets');
+            if (savedPresets) {
+                userPresets = JSON.parse(savedPresets);
+            }
+            renderPresetBadges();
+
+            const lastConfig = localStorage.getItem('interview_last_config');
+            if (lastConfig) {
+                const conf = JSON.parse(lastConfig);
+                textInput.value = conf.text || '';
+                document.getElementById('bg-color').value = conf.bg || '#0F172A';
+                document.getElementById('text-color').value = conf.textC || '#FFFFFF';
+                document.getElementById('font-family').value = conf.font || 'system-ui';
+                document.getElementById('text-align').value = conf.align || 'center';
+                document.getElementById('font-size').value = conf.size || '32';
+                document.getElementById('font-weight').value = conf.weight || 'bold';
+                document.getElementById('para-margin-slider').value = conf.para || '40';
+                document.getElementById('line-height-slider').value = conf.line || '1.6';
+                document.getElementById('stroke-width').value = conf.strokeW || '0';
+                document.getElementById('stroke-color').value = conf.strokeC || '#000000';
+                document.getElementById('shadow-toggle').checked = conf.shadowOn !== undefined ? conf.shadowOn : false;
+                document.getElementById('shadow-blur').value = conf.shadowB || '8';
+                document.getElementById('shadow-color').value = conf.shadowC || '#000000';
+                playbackSpeed.value = conf.speed || '1.0';
+                syncStyles();
+            } else {
+                document.getElementById('shadow-toggle').checked = false;
+                syncStyles();
+            }
+        }
+
+        // 核心：基于 50% 起跑至 50% 收尾的物理位移映射渲染循环
+        function updateScroll() {
+            if (!hiddenPlayer.duration || isDragging) {
+                animationFrameId = requestAnimationFrame(updateScroll);
+                return;
+            }
+
+            const progress = hiddenPlayer.currentTime / hiddenPlayer.duration;
+            const containerHeight = textContainer.offsetHeight;
+            const currentTranslateY = - (progress * containerHeight);
+            
+            textContainer.style.transform = `translate(-50%, ${currentTranslateY}px)`;
+
+            if (!hiddenPlayer.ended && !hiddenPlayer.paused) {
+                animationFrameId = requestAnimationFrame(updateScroll);
+            } else if (hiddenPlayer.ended) {
+                cancelAnimationFrame(animationFrameId);
+                showToast("🎉 本期面试跟读录制播放完毕！");
+            }
+        }
+
+        // 双态点击切换与酷炫磨砂闪烁动效
+        function togglePlayPause() {
+            if (!hiddenPlayer.src || !hiddenPlayer.duration) return;
+
+            const icon = actionOverlay.querySelector('i');
+            if (hiddenPlayer.paused) {
+                hiddenPlayer.play();
+                icon.className = "fa-solid fa-play";
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = requestAnimationFrame(updateScroll);
+            } else {
+                hiddenPlayer.pause();
+                icon.className = "fa-solid fa-pause";
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            // 触发 CSS 闪烁动画
+            actionOverlay.classList.remove('flash');
+            void actionOverlay.offsetWidth; // 触发回流以重新触发动画
+            actionOverlay.classList.add('flash');
+        }
+
+        // 触控/鼠标拖拽进度逻辑 (Text Scrubbing)
+        function startDrag(e) {
+            // 如果点在控制面板或按钮上，不要触发拖拽与暂停
+            if (e.target.closest('#control-panel') || e.target.closest('#floating-toggle-btn') || e.target.closest('#custom-toast')) {
+                return;
+            }
+
+            if (!hiddenPlayer.src || !hiddenPlayer.duration) return;
+
+            isDragging = true;
+            hasMoved = false;
+
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+            startY = clientY;
+
+            const containerHeight = textContainer.offsetHeight;
+            const progress = hiddenPlayer.currentTime / hiddenPlayer.duration;
+            startTranslateY = - (progress * containerHeight);
+
+            wasPlayingBeforeDrag = !hiddenPlayer.paused;
+            if (wasPlayingBeforeDrag) {
+                hiddenPlayer.pause();
+            }
+
+            if (e.type === 'touchstart') {
+                e.preventDefault(); // 阻断移动端默认的反弹滚动
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+            const deltaY = clientY - startY;
+
+            if (Math.abs(deltaY) > 4) {
+                hasMoved = true;
+            }
+
+            const containerHeight = textContainer.offsetHeight;
+            if (containerHeight === 0) return;
+
+            let newTranslateY = startTranslateY + deltaY;
+
+            // 限制拖拽边界 (起跑点 50% ~ 结束点 50%)
+            if (newTranslateY > 0) newTranslateY = 0;
+            if (newTranslateY < -containerHeight) newTranslateY = -containerHeight;
+
+            // 反向映射百分比，更新媒体进度
+            const progress = -newTranslateY / containerHeight;
+            hiddenPlayer.currentTime = progress * hiddenPlayer.duration;
+
+            textContainer.style.transform = `translate(-50%, ${newTranslateY}px)`;
+
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+            }
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (!hasMoved) {
+                // 只是短按/单击，执行：播放或暂停 且带有双击/双击判断
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 250 && tapLength > 0) {
+                    // 双击：在手机端隐藏/唤出面板
+                    togglePanel();
+                } else {
+                    // 单击：暂停与播放
+                    togglePlayPause();
+                }
+                lastTap = currentTime;
+            } else {
+                // 刚才经历了拖拽手势，松手后如果是之前在播放，则继续播放
+                if (wasPlayingBeforeDrag) {
+                    hiddenPlayer.play();
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = requestAnimationFrame(updateScroll);
+                }
+            }
+        }
+
+        // 注册舞台拖拽/点击事件监听
+        stage.addEventListener('mousedown', startDrag);
+        stage.addEventListener('touchstart', startDrag, { passive: false });
+
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('touchmove', drag, { passive: false });
+
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchend', endDrag);
+
+        // 开始播放滚动主逻辑
+        startBtn.addEventListener('click', () => {
+            const rawText = textInput.value.trim();
+            if (!rawText) {
+                showToast('⚠️ 请先在第二步粘贴你的英文面试文案！');
+                return;
+            }
+            if (!hiddenPlayer.src) {
+                showToast('⚠️ 请先在第一步导入音频或视频！');
+                return;
+            }
+
+            saveLastConfigToLocalStorage();
+
+            // 1. 结构化文本解析，100%保留回车
+            textContainer.innerHTML = '';
+            const paragraphs = rawText.split('\n');
+            paragraphs.forEach(para => {
+                const p = document.createElement('div');
+                p.className = 'text-paragraph';
+                p.innerText = para || ' '; // 保留空格占位以支持换行空气感
+                textContainer.appendChild(p);
+            });
+
+            // 2. 音轨初始化与变速应用
+            cancelAnimationFrame(animationFrameId);
+            hiddenPlayer.playbackRate = parseFloat(playbackSpeed.value);
+            hiddenPlayer.currentTime = 0;
+            
+            // 3. 初始第一行对齐屏幕正中 (Y:0)
+            textContainer.style.transform = `translate(-50%, 0px)`;
+            
+            // 4. 播放媒体
+            hiddenPlayer.play();
+
+            // 5. 自动隐藏控制台，留出极其干净的高级画面供录屏
+            setTimeout(() => {
+                controlPanel.style.display = 'none';
+                floatingToggleBtn.style.color = 'rgba(255, 255, 255, 0.05)';
+            }, 500);
+
+            animationFrameId = requestAnimationFrame(updateScroll);
+        });
+
+        // 页面初始化加载
+        window.onload = function() {
+            loadSavedPresetsAndConfig();
+        }
+    </script>
+</body>
+</html>
